@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Racha dos clandestinos</title>
+</head>
+<body>
+    <!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estatísticas de Futebol</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-blue-900 text-white min-h-screen flex flex-col items-center p-6">
+
+<h1 class="text-3xl font-bold mb-6 bg-blue-800 px-6 py-3 rounded-2xl shadow-lg">
+  ⚽ Sistema de Estatísticas
+</h1>
+
+<div class="bg-blue-800 p-6 rounded-2xl shadow-lg w-full max-w-xl">
+  <h2 class="text-xl font-semibold mb-4">Adicionar Jogador</h2>
+  <input id="nome" type="text" placeholder="Nome do jogador" class="w-full p-2 mb-3 rounded text-black">
+  <button onclick="adicionarJogador()" class="bg-blue-500 hover:bg-blue-600 w-full py-2 rounded">Adicionar</button>
+</div>
+
+<div class="mt-6 w-full max-w-xl">
+  <div class="flex justify-between items-center mb-4 gap-2">
+    <h2 class="text-xl font-semibold">Lista de Jogadores</h2>
+    <input id="pesquisa" oninput="render()" type="text" placeholder="Pesquisar..." class="p-2 rounded text-black w-40">
+  </div>
+  <div id="lista" class="space-y-4"></div>
+</div>
+
+<div class="mt-10 w-full max-w-xl">
+  <h2 class="text-xl font-semibold mb-4">🏆 Ranking</h2>
+  <button onclick="gerarRanking()" class="bg-yellow-500 hover:bg-yellow-600 w-full py-2 rounded mb-4">Gerar Ranking</button>
+  <div id="ranking"></div>
+</div>
+
+<script>
+let jogadores = JSON.parse(localStorage.getItem('jogadores')) || [];
+
+function salvarDados() {
+  localStorage.setItem('jogadores', JSON.stringify(jogadores));
+}
+
+function adicionarJogador() {
+  const nomeInput = document.getElementById('nome');
+  const nome = nomeInput.value.trim();
+
+  if (!nome) {
+    alert('Digite um nome válido!');
+    return;
+  }
+
+  jogadores.push({ nome, gols: 0, assistencias: 0 });
+  nomeInput.value = '';
+  salvarDados();
+  render();
+}
+
+function atualizar(index, tipo, valor) {
+  jogadores[index][tipo] += valor;
+  if (jogadores[index][tipo] < 0) jogadores[index][tipo] = 0;
+  salvarDados();
+  render();
+}
+
+function excluirJogador(index) {
+  if (confirm('Tem certeza que deseja excluir este jogador?')) {
+    jogadores.splice(index, 1);
+    salvarDados();
+    render();
+  }
+}
+
+function editarNome(index) {
+  const novoNome = prompt('Digite o novo nome do jogador:', jogadores[index].nome);
+  if (novoNome && novoNome.trim() !== '') {
+    jogadores[index].nome = novoNome.trim();
+    salvarDados();
+    render();
+  }
+}
+
+function render() {
+  const lista = document.getElementById('lista');
+  const busca = document.getElementById('pesquisa').value.toLowerCase();
+
+  lista.innerHTML = '';
+
+  let filtrados = jogadores
+    .filter(j => j.nome.toLowerCase().includes(busca))
+    .sort((a, b) => a.nome.localeCompare(b.nome));
+
+  filtrados.forEach((jogador) => {
+    const index = jogadores.indexOf(jogador);
+
+    lista.innerHTML += `
+      <div class="bg-blue-700 p-4 rounded-xl shadow">
+        <div class="flex justify-between items-center">
+          <h3 class="text-lg font-bold mb-2">${jogador.nome}</h3>
+          <div class="flex gap-2">
+            <button onclick="editarNome(${index})" class="bg-yellow-500 px-2 py-1 rounded text-sm">Editar</button>
+            <button onclick="excluirJogador(${index})" class="bg-red-600 px-2 py-1 rounded text-sm">Excluir</button>
+          </div>
+        </div>
+        <p>Gols: ${jogador.gols}</p>
+        <p>Assistências: ${jogador.assistencias}</p>
+        <div class="flex gap-2 mt-3 flex-wrap">
+          <button onclick="atualizar(${index}, 'gols', 1)" class="bg-green-500 px-2 py-1 rounded">+ Gol</button>
+          <button onclick="atualizar(${index}, 'gols', -1)" class="bg-red-500 px-2 py-1 rounded">- Gol</button>
+          <button onclick="atualizar(${index}, 'assistencias', 1)" class="bg-green-500 px-2 py-1 rounded">+ Assist</button>
+          <button onclick="atualizar(${index}, 'assistencias', -1)" class="bg-red-500 px-2 py-1 rounded">- Assist</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function gerarRanking() {
+  const rankingDiv = document.getElementById('ranking');
+
+  const porGols = [...jogadores].sort((a,b) => b.gols - a.gols);
+  const porAssist = [...jogadores].sort((a,b) => b.assistencias - a.assistencias);
+
+  let tabela = `
+    <div class="bg-blue-800 p-4 rounded-xl mb-4">
+      <h3 class="font-bold mb-2">⚽ Ranking de Gols</h3>
+      <table class="w-full text-left">
+        <tr><th>#</th><th>Nome</th><th>Gols</th></tr>
+  `;
+
+  porGols.forEach((j, i) => {
+    tabela += `<tr><td>${i+1}</td><td>${j.nome}</td><td>${j.gols}</td></tr>`;
+  });
+
+  tabela += `</table></div>`;
+
+  tabela += `
+    <div class="bg-blue-800 p-4 rounded-xl">
+      <h3 class="font-bold mb-2">🎯 Ranking de Assistências</h3>
+      <table class="w-full text-left">
+        <tr><th>#</th><th>Nome</th><th>Assist</th></tr>
+  `;
+
+  porAssist.forEach((j, i) => {
+    tabela += `<tr><td>${i+1}</td><td>${j.nome}</td><td>${j.assistencias}</td></tr>`;
+  });
+
+  tabela += `</table></div>`;
+
+  rankingDiv.innerHTML = tabela;
+}
+
+render();
+</script>
+
+</body>
+</html>
+</body>
+</html>
